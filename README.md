@@ -1,2 +1,138 @@
-# barbershop
-Job Scheduler
+# kt_scheduler-car - A Custom Barbershop Job Scheduler for kroknet. ![Build](http://dev.kroknet.com/jenkins/dev/kt_scheduler-car/status.svg) 
+
+kt_scheduler-car is a customized Barbershop, fast and lightweight priority queue system. The goal is to
+create a dead simple network service with libevent to manage priority
+queue.
+
+Due to some requirements for kroknet, we refactored it to give us some new interesting features such as delayed commits etc. 
+
+# Dependencies
+check >= 0.8.2
+libevent >= 1.4.13
+pkgconfig >= 0.25 (possibly lower versions would work)
+
+# Compilitaion Notes
+
+Normally all that should be needed is to compile:
+./bootstrap.sh
+./configure
+make
+
+If there is issues with libtool versions when running make, you can run:
+libtoolize	[or glibtoolize]
+./bootstrap.sh
+./configure
+make
+ 
+# Usage
+
+This application exists to allow priority queue workers to scale out. The
+idea is that for a given dataset (a list of numbers), some things need to be
+processed periodical and the order in which they processed may change over
+time. The workers shouldn't have to concern themselves with the why or how
+of a priority change, just which item to process next.
+
+Over a period of time, clients send update calls to barbershop:
+
+    UPDATE 61231 4
+    UPDATE 12353 1
+    UPDATE 12342 1
+
+Workers want the next item to be processed:
+
+    NEXT
+
+Monitors want to know the state of the system through info calls:
+
+    INFO
+
+# Protocol
+
+This protocol is based loosely on the Redis protocol specification.
+
+    http://code.google.com/p/redis/wiki/ProtocolSpecification
+
+A client connects to a Barbershop server creating a TCP connection to the
+port 8002. Every barbershop command or data transmitted by the client and
+the server is terminated by "\r\n" (CRLF).
+
+The simplest commands are the inline commands. This is an example of a
+server/client chat (the server chat starts with S:, the client chat with C:).
+
+    C: UPDATE 61231 5\r\n
+    S: +OK\r\n
+    C: NEXT\r\n
+    S: +61231\r\n
+
+An inline command is a CRLF-terminated string sent to the client. The server
+can reply to commands in different ways:
+
+    With an error message (the first byte of the reply will be "-")
+    With a single line reply (the first byte of the reply will be "+)
+
+This service does not support bulk commands or responses.
+
+## Commands
+
+There are only a handful of commands supported at this point.
+
+'UPDATE <item id> <value>'
+
+Update the priority of a given item by X.
+
+    C: UPDATE 61231 5\r\n
+    S: +OK\r\n
+
+'NEXT'
+
+Return the next item in the queue.
+
+    C: NEXT\r\n
+    S: +61231\r\n
+
+When there are no more items to return a '-1' is returned.
+
+    C: NEXT\r\n
+    S: +-1\r\n
+
+'PEEK'
+
+Return the next item in the queue without removing it from the queue.
+
+    C: PEEK\r\n
+    S: +61231\r\n
+
+When there are no more items to return a '-1' is returned.
+
+    C: PEEK\r\n
+    S: +-1\r\n
+
+'SCORE <item id>'
+
+Return the score of a given item.
+
+    C: SCORE 61231\r\n
+    S: +5\r\n
+
+If the item does not exist or have a score then a '-1' is returned.
+
+    C: SCORE 61231\r\n
+    S: +-1\r\n
+
+'INFO'
+
+Return some server stats. This command deviates from the standard response
+format by returning a list of key-value pairs separated by a ':'.
+
+* 'uptime' (32u) Number of seconds this server has been running.
+* 'version' (string) Version string of this server.
+* 'updates' (32u) Number of update commands received by this server.
+* 'items' (32u) Number of items.
+* 'pools' (32u) Number of pools.
+
+    C: INFO\r\n
+    S: uptime:60000\r\n
+    S: version:0.2.1\r\n
+    S: updates:9742851\r\n
+    S: items:2132931\r\n
+    S: pools:47831\r\n
