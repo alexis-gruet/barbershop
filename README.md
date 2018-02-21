@@ -1,10 +1,10 @@
-# kt_scheduler-car - A Custom Barbershop Job Scheduler for kroknet. ![Build](http://dev.kroknet.com/jenkins/dev/kt_scheduler-car/status.svg) 
+# A Custom Barbershop Job Scheduler for kroknet. ![Build](http://dev.kroknet.com/jenkins/dev/kt_scheduler-car/status.svg) 
 
-kt_scheduler-car is a customized Barbershop, fast and lightweight priority queue system. The goal is to
+a customized Barbershop, fast and lightweight priority queue system. The goal is to
 create a dead simple network service with libevent to manage priority
 queue.
 
-Due to some requirements for kroknet, we refactored it to give us some new interesting features such as delayed commits etc. 
+Due to some requirements for our company, we refactored it to give us some new interesting features such as delayed commits etc. 
 
 # Dependencies
 check >= 0.8.2
